@@ -157,6 +157,20 @@ Recommendation:
 Do not load this repository into an AI coding agent without sandboxing and manual review.
 ```
 
+## Screenshots
+
+Critical repository scan:
+
+![RepoGuard critical scan](assets/screenshots/critical-scan.svg)
+
+Machine-readable JSON output:
+
+![RepoGuard JSON output](assets/screenshots/clean-json.svg)
+
+CI or automation gate:
+
+![RepoGuard CI gate](assets/screenshots/ci-gate.svg)
+
 ## What RepoGuard Is Not
 
 RepoGuard is not a full antivirus engine, vulnerability scanner, or guarantee that a repository is safe. It is a fast pre-agent risk check designed to catch patterns that matter when an AI coding agent is about to inspect or operate on unknown code.

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="636" viewBox="0 0 1220 636" role="img" aria-label="RepoGuard JSON output">
+<rect width="1220" height="636" rx="14" fill="#0d1117"/>
+<rect x="16" y="16" width="1188" height="604" rx="12" fill="#161b22" stroke="#30363d"/>
+<circle cx="42" cy="42" r="7" fill="#ff5f56"/>
+<circle cx="64" cy="42" r="7" fill="#ffbd2e"/>
+<circle cx="86" cy="42" r="7" fill="#27c93f"/>
+<text x="610" y="48" text-anchor="middle" fill="#8b949e" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">RepoGuard JSON output</text>
+<text x="34" y="86" fill="#58a6ff" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">$ repoguard scan tests/fixtures/clean-repo --format json</text>
+<text x="34" y="108" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">{</text>
+<text x="34" y="130" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;brand&quot;: &quot;RepoGuard by MPG ONE LLC&quot;,</text>
+<text x="34" y="152" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;category_scores&quot;: {},</text>
+<text x="34" y="174" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;findings&quot;: [],</text>
+<text x="34" y="196" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;recommendation&quot;: &quot;No agent-specific risk signals were found by the current rule set.&quot;,</text>
+<text x="34" y="218" fill="#3fb950" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;risk_level&quot;: &quot;clean&quot;,</text>
+<text x="34" y="240" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;scanned_bytes&quot;: 188,</text>
+<text x="34" y="262" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;scanned_files&quot;: 2,</text>
+<text x="34" y="284" fill="#3fb950" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;score&quot;: 0,</text>
+<text x="34" y="306" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;severity_counts&quot;: {</text>
+<text x="34" y="328" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    &quot;critical&quot;: 0,</text>
+<text x="34" y="350" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    &quot;high&quot;: 0,</text>
+<text x="34" y="372" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    &quot;info&quot;: 0,</text>
+<text x="34" y="394" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    &quot;low&quot;: 0,</text>
+<text x="34" y="416" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    &quot;medium&quot;: 0</text>
+<text x="34" y="438" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  },</text>
+<text x="34" y="460" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;skipped_files&quot;: 0,</text>
+<text x="34" y="482" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;source&quot;: &quot;local&quot;,</text>
+<text x="34" y="504" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;target&quot;: &quot;tests/fixtures/clean-repo&quot;,</text>
+<text x="34" y="526" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;tool&quot;: &quot;RepoGuard&quot;,</text>
+<text x="34" y="548" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  &quot;version&quot;: &quot;0.1.0&quot;</text>
+<text x="34" y="570" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">}</text>
+</svg>

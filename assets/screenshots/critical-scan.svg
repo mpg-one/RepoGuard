@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="944" viewBox="0 0 1220 944" role="img" aria-label="RepoGuard critical scan">
+<rect width="1220" height="944" rx="14" fill="#0d1117"/>
+<rect x="16" y="16" width="1188" height="912" rx="12" fill="#161b22" stroke="#30363d"/>
+<circle cx="42" cy="42" r="7" fill="#ff5f56"/>
+<circle cx="64" cy="42" r="7" fill="#ffbd2e"/>
+<circle cx="86" cy="42" r="7" fill="#27c93f"/>
+<text x="610" y="48" text-anchor="middle" fill="#8b949e" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">RepoGuard critical scan</text>
+<text x="34" y="86" fill="#58a6ff" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">$ repoguard scan tests/fixtures/suspicious-repo</text>
+<text x="34" y="108" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">RepoGuard by MPG ONE LLC</text>
+<text x="34" y="130" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">========================</text>
+<text x="34" y="152" fill="#8b949e" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Version: 0.1.0</text>
+<text x="34" y="174" fill="#8b949e" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Target: tests/fixtures/suspicious-repo</text>
+<text x="34" y="196" fill="#8b949e" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Source: local</text>
+<text x="34" y="218" fill="#ff7b72" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Risk: Critical</text>
+<text x="34" y="240" fill="#ffa657" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Score: 100/100</text>
+<text x="34" y="262" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Scanned files: 6</text>
+<text x="34" y="284" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Skipped files: 0</text>
+<text x="34" y="306" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16"></text>
+<text x="34" y="328" fill="#bc8cff" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Category scores:</text>
+<text x="34" y="350" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - agent: 100/100</text>
+<text x="34" y="372" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - ci: 54/100</text>
+<text x="34" y="394" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - exfiltration: 100/100</text>
+<text x="34" y="416" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - install: 100/100</text>
+<text x="34" y="438" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - malware: 70/100</text>
+<text x="34" y="460" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - obfuscation: 22/100</text>
+<text x="34" y="482" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16"></text>
+<text x="34" y="504" fill="#bc8cff" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Findings:</text>
+<text x="34" y="526" fill="#ff7b72" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - CRITICAL exfil-sensitive-network .github/workflows/pwn.yml:10</text>
+<text x="34" y="548" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    Sensitive local data appears near network upload behavior.</text>
+<text x="34" y="570" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    Evidence: GITHUB_TOKEN ... curl</text>
+<text x="34" y="592" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16"></text>
+<text x="34" y="614" fill="#ff7b72" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - CRITICAL agent-credential-request README.md:3</text>
+<text x="34" y="636" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    Agent-facing text asks for sensitive credentials or files.</text>
+<text x="34" y="658" fill="#ff7b72" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - CRITICAL exfil-sensitive-network steal.py:4</text>
+<text x="34" y="680" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    Sensitive local data appears near network upload behavior.</text>
+<text x="34" y="702" fill="#ffa657" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - HIGH shell-pipe-to-shell install.sh:2</text>
+<text x="34" y="724" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    Remote script is piped into a shell.</text>
+<text x="34" y="746" fill="#ffa657" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - HIGH package-lifecycle-script package.json:5</text>
+<text x="34" y="768" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    Package lifecycle script executes commands during install.</text>
+<text x="34" y="790" fill="#ffa657" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  - HIGH github-actions-secret-remote-exec .github/workflows/pwn.yml:10</text>
+<text x="34" y="812" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">    Workflow combines secrets with remote or shell execution.</text>
+<text x="34" y="834" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16"></text>
+<text x="34" y="856" fill="#bc8cff" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Recommendation:</text>
+<text x="34" y="878" fill="#c9d1d9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">  Do not load this repository into an AI coding agent without isolation and manual security review.</text>
+</svg>
