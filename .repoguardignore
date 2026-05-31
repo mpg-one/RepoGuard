@@ -1,0 +1,6 @@
+# RepoGuard's tests intentionally contain malicious signatures.
+tests/fixtures/suspicious-repo/
+
+# Built-in detection signatures can look suspicious when scanning this scanner.
+src/repoguard/rules.py
+
