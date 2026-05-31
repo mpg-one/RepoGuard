@@ -61,6 +61,40 @@ repoguard scan https://github.com/user/repo
 
 RepoGuard clones the repository into a temporary directory, scans it, and removes the temporary copy when finished.
 
+## AI Agent Integrations
+
+RepoGuard is built as a CLI-first scanner so it can be used directly by people, CI systems, and AI-agent tooling.
+
+Current support:
+
+- CLI usage with local paths and GitHub repository URLs
+- JSON output for agent/tool integrations
+- SARIF output for security pipelines
+- exit-code gating with `--fail-on`
+
+Integration-ready targets:
+
+- MCP server wrapper for Claude, Cursor, Codex-compatible clients, and other MCP-capable tools
+- Codex skill wrapper that runs `repoguard scan` before an agent works inside an unknown repository
+- GitHub Action for scanning pull requests and repositories before agent access
+
+The intended agent flow is:
+
+```txt
+Unknown repository
+        |
+        v
+RepoGuard scan
+        |
+        v
+Risk report
+        |
+        v
+Human or AI agent decides whether to continue
+```
+
+The CLI is available now. Native MCP server and skill packages are planned on top of the same scanner engine.
+
 ## Output Formats
 
 Human-readable report:
