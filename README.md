@@ -29,7 +29,13 @@ RepoGuard does **static analysis only**. It does not run repository code, instal
 
 ## Install
 
-From this repository:
+Directly from GitHub:
+
+```bash
+python3 -m pip install git+https://github.com/mpg-one/RepoGuard.git
+```
+
+Or from a local clone of this repository:
 
 ```bash
 python3 -m pip install .

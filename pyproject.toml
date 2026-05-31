@@ -37,8 +37,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/mpg-one/repoguard"
-Issues = "https://github.com/mpg-one/repoguard/issues"
+Homepage = "https://github.com/mpg-one/RepoGuard"
+Issues = "https://github.com/mpg-one/RepoGuard/issues"
 
 [project.scripts]
 repoguard = "repoguard.cli:main"

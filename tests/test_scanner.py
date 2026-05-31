@@ -74,6 +74,18 @@ class ScannerTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 2)
 
+    def test_cli_help_uses_company_branding(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-m", "repoguard", "--help"],
+            cwd=str(ROOT),
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        self.assertIn("MPG ONE LLC", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

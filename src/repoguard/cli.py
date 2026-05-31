@@ -12,7 +12,7 @@ from .target import prepare_target
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="repoguard",
-        description="Static repository risk scanner for AI coding agents. Made by MPG ONE.",
+        description="Static repository risk scanner for AI coding agents. Made by MPG ONE LLC.",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command")
