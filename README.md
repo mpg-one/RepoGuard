@@ -33,6 +33,9 @@ A repository that looks ordinary to a human can contain instructions or automati
 | Correlate sensitive-file access with network upload behavior | Yes |
 | Text, JSON, and SARIF reports | Yes |
 | CI-friendly exit-code gating | Yes |
+| Explicit baselines for accepted findings | Yes |
+| Changed-file scans for local Git repositories | Yes |
+| One-line daily verdicts | Yes |
 | Execute repository code | Never |
 | Upload repository contents for analysis | Never |
 
@@ -50,6 +53,13 @@ python3 -m pip install git+https://github.com/mpg-one/RepoGuard.git
 repoguard scan ./project
 ```
 
+Inside a project, the target is optional:
+
+```bash
+cd ./project
+repoguard
+```
+
 ### Scan a remote repository
 
 ```bash
@@ -65,6 +75,31 @@ From a local RepoGuard clone:
 ```bash
 PYTHONPATH=src python3 -m repoguard scan ./project
 ```
+
+## Daily Use
+
+Run a one-line scan from the repository you are working in:
+
+```bash
+repoguard --quiet
+```
+
+For pull-request work, scan only changed and untracked files relative to the base branch while suppressing findings your team has explicitly accepted:
+
+```bash
+repoguard scan --diff origin/main --baseline .repoguard-baseline.json
+```
+
+Create or refresh that baseline only after reviewing the full current findings:
+
+```bash
+repoguard scan --baseline .repoguard-baseline.json --update-baseline
+git diff -- .repoguard-baseline.json
+```
+
+**Trust rule:** RepoGuard loads a baseline only when you pass its path with `--baseline`. It never auto-loads `.repoguard-baseline.json` or any other baseline from the repository being scanned. A hostile repository shipping its own baseline has no effect unless you explicitly choose that file.
+
+Baselined findings are excluded from scoring, verdicts, and default output. Use `--show-baselined` to include them in text reports. A baseline update is refused when a scan is incomplete, so a truncated result can never become the accepted baseline.
 
 ## What It Detects
 
@@ -92,13 +127,16 @@ Every finding includes:
 ```text
 RepoGuard by MPG ONE LLC
 ========================
-Version: 0.1.1
+Version: 0.2.0
 Target: suspicious-repository
 Source: local
+Mode: full
 Status: COMPLETE
 Verdict: DO_NOT_PROCEED
 Risk: Critical
 Score: 100/100
+New findings: 12
+Baselined findings: 0
 
 Findings:
   - CRITICAL agent-credential-request README.md:3
@@ -156,6 +194,28 @@ repoguard scan . --evidence none
 repoguard scan . --evidence snippet
 ```
 
+### Command Flags
+
+| Flag | Purpose |
+| --- | --- |
+| `[target]` | Local path or public GitHub URL; defaults to the current directory |
+| `-q`, `--quiet` | Print one text line with verdict, risk, and finding counts |
+| `--format text\|json\|sarif` | Select the report format |
+| `--output PATH` | Write the report to a file |
+| `--fail-on LEVEL` | Exit `2` when new findings reach the chosen risk threshold |
+| `--baseline PATH` | Explicitly load an accepted-finding baseline |
+| `--show-baselined` | Include suppressed findings in text output |
+| `--update-baseline` | Rewrite the explicit baseline from a complete scan |
+| `--diff REF` | Scan changed and untracked files relative to a local Git ref |
+| `--evidence safe\|none\|snippet` | Control evidence disclosure |
+| `--ignore-file PATH` | Explicitly load reviewed ignore patterns |
+| `--max-files N` | Stop after the file-count limit and return `INCOMPLETE` |
+| `--max-total-bytes N` | Stop after the total-byte limit and return `INCOMPLETE` |
+| `--max-file-bytes N` | Skip individual files larger than the limit |
+| `--max-seconds N` | Stop after the duration limit and return `INCOMPLETE` |
+
+`--quiet` is ignored for JSON and SARIF because those formats already provide machine-oriented output.
+
 ## Use It Before an AI Agent
 
 Run RepoGuard before opening an unknown project with an agent:
@@ -205,6 +265,8 @@ Exit codes:
 
 Incomplete scans fail closed. They report `Status: INCOMPLETE`, set the machine verdict to `INCOMPLETE`, never display a clean risk level, and return exit code `3` regardless of `--fail-on`.
 
+Baselined findings do not contribute to risk thresholds. Operational errors such as malformed baselines, unknown baseline versions, invalid Git refs, or unavailable Git return exit code `1`; RepoGuard never falls back to a full scan when `--diff` fails.
+
 ## Ignore Policy
 
 Use an explicit ignore file when scanning a trusted project with known test fixtures or generated content:
@@ -220,6 +282,8 @@ RepoGuard does not automatically trust ignore files shipped by the repository be
 Available today:
 
 - command-line scanning for local paths and public GitHub URLs
+- explicit baseline suppression and changed-file scanning
+- one-line quiet verdicts for frequent local use
 - JSON output for scripts and agent tooling
 - SARIF output for security pipelines
 - threshold-based exit codes for automation
@@ -237,6 +301,8 @@ RepoGuard is deliberately static and local-first:
 - it skips symlinks, special files, and paths resolving outside the scan root
 - it validates file identity before and after opening the descriptor
 - it stops with an explicit `INCOMPLETE` verdict when file-count, byte, or duration limits are reached
+- it never auto-loads repository-provided baseline or ignore files
+- it applies the complete hardened file pipeline to paths selected by `--diff`
 
 Remote scanning requires Git and network access only to download the requested repository.
 
