@@ -1,202 +1,263 @@
 # RepoGuard
 
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB.svg)](pyproject.toml)
+[![Status: Alpha](https://img.shields.io/badge/status-alpha-orange.svg)](https://github.com/mpg-one/RepoGuard)
+
 **Scan before you agent.**
 
-RepoGuard is an open-source static repository scanner for AI coding agents such as Codex, Claude Code, Cursor, Gemini CLI, and similar tools.
+RepoGuard is a local-first static scanner that checks an unknown repository for risks targeting AI coding agents such as Codex, Claude Code, Cursor, Gemini CLI, and similar tools.
 
 Made by **MPG ONE LLC**.
 
-RepoGuard is licensed under the Apache License 2.0. You may use, modify, and distribute it under the terms of that license. RepoGuard and MPG ONE branding are covered by the project trademark policy.
+```bash
+python3 -m pip install git+https://github.com/mpg-one/RepoGuard.git
+repoguard scan https://github.com/user/repository
+```
 
-## Why
+RepoGuard analyzes the repository without running its code, installing its dependencies, or executing its setup scripts. No API key is required.
 
-AI coding agents can read project files, follow instructions in docs, run commands, install dependencies, and edit code. That creates a new risk category: a repository may be safe-looking to a human but hostile to an autonomous coding agent.
+## Why RepoGuard
 
-RepoGuard checks a repository before you give it to an agent.
+AI coding agents do more than read source code. They can follow repository instructions, run terminal commands, install packages, access local files, use credentials, and trigger workflows.
 
-It looks for risks like:
+A repository that looks ordinary to a human can contain instructions or automation designed to manipulate an agent. RepoGuard gives you a fast preflight report before the agent receives access.
 
-- prompt injection aimed at AI coding agents
-- dangerous install scripts such as `curl | bash`
-- package lifecycle scripts that run shell commands
-- sensitive-file access combined with network exfiltration
-- suspicious GitHub Actions workflows
-- obfuscated JavaScript
-- crypto miner indicators
-- Docker socket and privileged container usage
+| Capability | Included |
+| --- | --- |
+| Scan local directories | Yes |
+| Scan GitHub and Git repository URLs | Yes |
+| Detect agent-focused prompt injection | Yes |
+| Inspect install scripts and package hooks | Yes |
+| Inspect risky GitHub Actions patterns | Yes |
+| Correlate sensitive-file access with network upload behavior | Yes |
+| Text, JSON, and SARIF reports | Yes |
+| CI-friendly exit-code gating | Yes |
+| Execute repository code | Never |
+| Upload repository contents for analysis | Never |
 
-RepoGuard does **static analysis only**. It does not run repository code, install dependencies, or execute setup scripts.
+## Quick Start
 
-## Install
-
-Directly from GitHub:
+### Install from GitHub
 
 ```bash
 python3 -m pip install git+https://github.com/mpg-one/RepoGuard.git
 ```
 
-Or from a local clone of this repository:
+### Scan a local repository
 
 ```bash
-python3 -m pip install .
+repoguard scan ./project
 ```
 
-Then run:
+### Scan a remote repository
 
 ```bash
-repoguard scan .
+repoguard scan https://github.com/user/repository
 ```
 
-You can also run it without installing:
+Remote repositories are shallow-cloned into a temporary directory with Git hooks and LFS downloads disabled. The temporary copy is removed after the scan.
+
+### Run without installing
+
+From a local RepoGuard clone:
 
 ```bash
-PYTHONPATH=src python3 -m repoguard scan .
+PYTHONPATH=src python3 -m repoguard scan ./project
 ```
 
-## Scan A GitHub Repository
+## What It Detects
 
-```bash
-repoguard scan https://github.com/user/repo
+| Risk category | Examples |
+| --- | --- |
+| Agent manipulation | Instructions telling Codex, Claude Code, Cursor, or another agent to ignore rules, reveal prompts, or execute commands |
+| Credential targeting | Requests involving `.env`, SSH keys, API keys, tokens, cloud credentials, or other sensitive local files |
+| Dangerous installation | `curl | bash`, `wget | sh`, remote binary downloads, and package lifecycle hooks |
+| Data exfiltration | Sensitive-file references combined with network upload behavior |
+| Risky automation | `pull_request_target`, secrets combined with shell execution, and self-hosted GitHub Actions runners |
+| Hidden execution | Python dynamic execution, Node.js child processes, and obfuscated JavaScript |
+| Malware indicators | Crypto-mining terms and suspicious encoded payload patterns |
+| Sandbox escape risk | Docker socket mounts and privileged container execution |
+
+Every finding includes:
+
+- severity and rule identifier
+- file path and line number
+- redacted evidence
+- explanation of the risk
+- recommended next action
+
+## Example Result
+
+```text
+RepoGuard by MPG ONE LLC
+========================
+Version: 0.1.0
+Target: suspicious-repository
+Source: local
+Risk: Critical
+Score: 100/100
+
+Findings:
+  - CRITICAL agent-credential-request README.md:3
+    Agent-facing text asks for sensitive credentials or files.
+    Fix: Do not expose this repository to an agent with access to user files or secrets.
+
+  - HIGH shell-pipe-to-shell install.sh:2
+    Remote script is piped into a shell.
+    Fix: Inspect the downloaded script before execution; agents should not run this automatically.
+
+Recommendation:
+  Do not load this repository into an AI coding agent without isolation and manual security review.
 ```
 
-RepoGuard clones the repository into a temporary directory, scans it, and removes the temporary copy when finished.
+## See It In Action
 
-## AI Agent Integrations
-
-RepoGuard is built as a CLI-first scanner so it can be used directly by people, CI systems, and AI-agent tooling.
-
-Current support:
-
-- CLI usage with local paths and GitHub repository URLs
-- JSON output for agent/tool integrations
-- SARIF output for security pipelines
-- exit-code gating with `--fail-on`
-
-Integration-ready targets:
-
-- MCP server wrapper for Claude, Cursor, Codex-compatible clients, and other MCP-capable tools
-- Codex skill wrapper that runs `repoguard scan` before an agent works inside an unknown repository
-- GitHub Action for scanning pull requests and repositories before agent access
-
-The intended agent flow is:
-
-```txt
-Unknown repository
-        |
-        v
-RepoGuard scan
-        |
-        v
-Risk report
-        |
-        v
-Human or AI agent decides whether to continue
-```
-
-The CLI is available now. Native MCP server and skill packages are planned on top of the same scanner engine.
+<p align="center">
+  <img src="assets/screenshots/critical-scan.svg" alt="RepoGuard critical repository scan" width="32%">
+  <img src="assets/screenshots/clean-json.svg" alt="RepoGuard JSON output" width="32%">
+  <img src="assets/screenshots/ci-gate.svg" alt="RepoGuard CI gate" width="32%">
+</p>
 
 ## Output Formats
 
-Human-readable report:
+Human-readable terminal report:
 
 ```bash
 repoguard scan .
 ```
 
-JSON report:
+JSON for scripts, agents, and other tools:
 
 ```bash
 repoguard scan . --format json
 ```
 
-SARIF report for security tooling:
+SARIF for security pipelines and code-scanning systems:
 
 ```bash
 repoguard scan . --format sarif --output repoguard.sarif
 ```
 
-Use an explicit ignore file:
+## Use It Before an AI Agent
+
+Run RepoGuard before opening an unknown project with an agent:
 
 ```bash
-repoguard scan . --ignore-file .repoguardignore
+repoguard scan https://github.com/user/repository --fail-on high
 ```
 
-RepoGuard does not automatically trust ignore files from scanned repositories. This is intentional: an unknown hostile repo should not be able to hide files from the scanner by shipping its own ignore config.
+If RepoGuard exits successfully, review any remaining low or medium findings before continuing. A high or critical result exits with status `2` when `--fail-on high` is used.
+
+```text
+Unknown repository
+        |
+        v
+RepoGuard static scan
+        |
+        v
+Review risk report
+        |
+        v
+Allow, sandbox, or reject agent access
+```
 
 ## CI Gate
 
-Fail a CI job when the risk level reaches a threshold:
+Fail automation when the final risk level reaches a chosen threshold:
 
 ```bash
 repoguard scan . --fail-on high
 ```
 
-Thresholds are:
+Available thresholds:
 
 - `low`
 - `medium`
 - `high`
 - `critical`
 
-## Example
+Exit codes:
 
-```txt
-RepoGuard by MPG ONE LLC
-Target: https://github.com/user/repo
-Risk: High
-Score: 72/100
+| Code | Meaning |
+| --- | --- |
+| `0` | Scan completed and the configured threshold was not reached |
+| `1` | RepoGuard could not complete the scan |
+| `2` | The configured `--fail-on` threshold was reached |
 
-Findings:
-- HIGH agent-prompt-injection README.md:12
-  Agent-targeted prompt injection language found.
+## Ignore Policy
 
-- CRITICAL exfil-sensitive-network scripts/setup.py:31
-  Sensitive local files and network upload behavior appear in the same file.
+Use an explicit ignore file when scanning a trusted project with known test fixtures or generated content:
 
-Recommendation:
-Do not load this repository into an AI coding agent without sandboxing and manual review.
+```bash
+repoguard scan . --ignore-file .repoguardignore
 ```
 
-## Screenshots
+RepoGuard does not automatically trust ignore files shipped by the repository being scanned. Otherwise, a hostile repository could use its own ignore configuration to hide risky files from the scanner.
 
-Critical repository scan:
+## Integrations
 
-![RepoGuard critical scan](assets/screenshots/critical-scan.svg)
+Available today:
 
-Machine-readable JSON output:
+- command-line scanning for local paths and Git URLs
+- JSON output for scripts and agent tooling
+- SARIF output for security pipelines
+- threshold-based exit codes for automation
 
-![RepoGuard JSON output](assets/screenshots/clean-json.svg)
+Planned integrations:
 
-CI or automation gate:
+- MCP server for MCP-compatible clients
+- globally installed Codex and Claude Code skills
+- GitHub Action for repository and pull-request scanning
+- commit-aware trust receipts and changed-file scanning
 
-![RepoGuard CI gate](assets/screenshots/ci-gate.svg)
+The CLI is the working product today. Planned integrations will use the same scanner engine and rules.
 
-## What RepoGuard Is Not
+## Security Model
 
-RepoGuard is not a full antivirus engine, vulnerability scanner, or guarantee that a repository is safe. It is a fast pre-agent risk check designed to catch patterns that matter when an AI coding agent is about to inspect or operate on unknown code.
+RepoGuard is deliberately static and local-first:
+
+- it does not execute repository code
+- it does not install repository dependencies
+- it does not run setup or package scripts
+- it does not require an LLM or API key
+- it does not upload repository contents for analysis
+- it redacts common credential formats from displayed evidence
+
+Remote scanning requires Git and network access only to download the requested repository.
+
+## Limitations
+
+RepoGuard is a focused pre-agent risk scanner. It is not a full antivirus engine, dependency vulnerability scanner, malware sandbox, or guarantee that a repository is safe.
+
+Static rules can produce false positives and cannot detect every multi-stage or environment-dependent attack. Treat a clean report as one useful security signal, not unlimited permission for an agent.
 
 ## Development
 
-Run tests:
+Clone the repository and run the test suite:
 
 ```bash
+git clone https://github.com/mpg-one/RepoGuard.git
+cd RepoGuard
 PYTHONPATH=src python3 -m unittest discover -s tests
 ```
 
-Run the CLI against the suspicious fixture:
+Scan the included suspicious fixture:
 
 ```bash
 PYTHONPATH=src python3 -m repoguard scan tests/fixtures/suspicious-repo
 ```
 
-Scan this repository while ignoring test signatures:
+Scan RepoGuard while excluding its intentionally suspicious test signatures:
 
 ```bash
 PYTHONPATH=src python3 -m repoguard scan . --ignore-file .repoguardignore
 ```
 
-## License
+Contributions, new detection rules, adversarial fixtures, and false-positive reports are welcome through [GitHub Issues](https://github.com/mpg-one/RepoGuard/issues).
+
+## License And Trademark
 
 Copyright 2026 MPG ONE LLC.
 
-RepoGuard is open-source software licensed under the [Apache License 2.0](LICENSE). See [TRADEMARKS.md](TRADEMARKS.md) for the project branding policy.
+RepoGuard is open-source software licensed under the [Apache License 2.0](LICENSE). You may use, modify, and distribute it under that license. See [TRADEMARKS.md](TRADEMARKS.md) for the RepoGuard and MPG ONE branding policy.
