@@ -6,12 +6,18 @@ from .models import Finding, ScanReport, SEVERITY_POINTS
 
 
 def render_text(report: ScanReport) -> str:
+    if report.truncated:
+        status = "INCOMPLETE ({0} limit reached)".format(report.truncation_reason)
+    else:
+        status = "COMPLETE"
     lines: List[str] = [
         BRAND,
         "=" * len(BRAND),
         f"Version: {__version__}",
         f"Target: {report.target}",
         f"Source: {report.source}",
+        f"Status: {status}",
+        f"Verdict: {report.verdict}",
         f"Risk: {report.risk_level.title()}",
         f"Score: {report.score}/100",
         f"Scanned files: {report.scanned_files}",
@@ -40,12 +46,14 @@ def render_text_finding(finding: Finding) -> List[str]:
     location = finding.path
     if finding.line:
         location = f"{location}:{finding.line}"
-    return [
+    lines = [
         f"  - {finding.severity.upper()} {finding.rule_id} {location}",
         f"    {finding.title}",
-        f"    Evidence: {finding.evidence or 'n/a'}",
-        f"    Fix: {finding.recommendation}",
     ]
+    if finding.evidence is not None:
+        lines.append(f"    Evidence: {finding.evidence}")
+    lines.append(f"    Fix: {finding.recommendation}")
+    return lines
 
 
 def render_json(report: ScanReport) -> str:
@@ -72,6 +80,17 @@ def render_sarif(report: ScanReport) -> str:
             },
         }
 
+    invocation: Dict[str, object] = {"executionSuccessful": not report.truncated}
+    if report.truncated:
+        invocation["toolExecutionNotifications"] = [
+            {
+                "level": "error",
+                "message": {
+                    "text": "RepoGuard scan incomplete: {0} limit reached.".format(report.truncation_reason)
+                },
+            }
+        ]
+
     payload = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",
@@ -86,8 +105,13 @@ def render_sarif(report: ScanReport) -> str:
                     }
                 },
                 "results": [sarif_result(finding) for finding in report.findings],
+                "invocations": [invocation],
                 "properties": {
                     "brand": BRAND,
+                    "scan_status": report.scan_status,
+                    "truncated": report.truncated,
+                    "truncation_reason": report.truncation_reason,
+                    "verdict": report.verdict,
                     "risk_level": report.risk_level,
                     "score": report.score,
                     "recommendation": report.recommendation,
@@ -101,10 +125,13 @@ def render_sarif(report: ScanReport) -> str:
 
 
 def sarif_result(finding: Finding) -> Dict[str, object]:
+    message = finding.title
+    if finding.evidence is not None:
+        message = f"{message} Evidence: {finding.evidence}"
     return {
         "ruleId": finding.rule_id,
         "level": sarif_level(finding.severity),
-        "message": {"text": f"{finding.title} Evidence: {finding.evidence}"},
+        "message": {"text": message},
         "locations": [
             {
                 "physicalLocation": {
@@ -141,4 +168,3 @@ def render_report(report: ScanReport, output_format: str) -> str:
 def risk_meets_threshold(risk_level: str, threshold: str) -> bool:
     order = {"clean": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
     return order[risk_level] >= order[threshold]
-

@@ -28,12 +28,15 @@ class Finding:
     category: str
     path: str
     line: int
-    evidence: str
+    evidence: Optional[str]
     description: str
     recommendation: str
 
     def to_dict(self) -> Dict[str, object]:
-        return asdict(self)
+        payload = asdict(self)
+        if self.evidence is None:
+            payload.pop("evidence")
+        return payload
 
 
 @dataclass(frozen=True)
@@ -53,6 +56,9 @@ class ScanReport:
     scanned_files: int = 0
     skipped_files: int = 0
     scanned_bytes: int = 0
+    scan_status: str = "complete"
+    truncated: bool = False
+    truncation_reason: Optional[str] = None
 
     @property
     def score(self) -> int:
@@ -76,18 +82,33 @@ class ScanReport:
     @property
     def risk_level(self) -> str:
         counts = self.severity_counts
+        level = "clean"
         if self.score >= 80 or counts["critical"] >= 2:
-            return "critical"
-        if self.score >= 55 or counts["critical"] >= 1 or counts["high"] >= 2:
-            return "high"
-        if self.score >= 25 or counts["high"] >= 1:
+            level = "critical"
+        elif self.score >= 55 or counts["critical"] >= 1 or counts["high"] >= 2:
+            level = "high"
+        elif self.score >= 25 or counts["high"] >= 1:
+            level = "medium"
+        elif self.score > 0:
+            level = "low"
+        if self.truncated and RISK_ORDER[level] < RISK_ORDER["medium"]:
             return "medium"
-        if self.score > 0:
-            return "low"
-        return "clean"
+        return level
+
+    @property
+    def verdict(self) -> str:
+        if self.truncated:
+            return "INCOMPLETE"
+        if self.risk_level in {"clean", "low"}:
+            return "OK"
+        if self.risk_level == "medium":
+            return "CAUTION"
+        return "DO_NOT_PROCEED"
 
     @property
     def recommendation(self) -> str:
+        if self.truncated:
+            return "The scan was incomplete. Do not treat this repository as clean; increase the limit and scan again."
         if self.risk_level == "critical":
             return "Do not load this repository into an AI coding agent without isolation and manual security review."
         if self.risk_level == "high":
@@ -104,6 +125,10 @@ class ScanReport:
             "brand": "RepoGuard by MPG ONE LLC",
             "target": self.target,
             "source": self.source,
+            "scan_status": self.scan_status,
+            "truncated": self.truncated,
+            "truncation_reason": self.truncation_reason,
+            "verdict": self.verdict,
             "risk_level": self.risk_level,
             "score": self.score,
             "recommendation": self.recommendation,
