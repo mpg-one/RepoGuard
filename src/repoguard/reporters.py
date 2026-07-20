@@ -5,7 +5,7 @@ from . import BRAND, __version__
 from .models import Finding, ScanReport, SEVERITY_POINTS
 
 
-def render_text(report: ScanReport) -> str:
+def render_text(report: ScanReport, show_baselined: bool = False) -> str:
     if report.truncated:
         status = "INCOMPLETE ({0} limit reached)".format(report.truncation_reason)
     else:
@@ -16,10 +16,15 @@ def render_text(report: ScanReport) -> str:
         f"Version: {__version__}",
         f"Target: {report.target}",
         f"Source: {report.source}",
+        "Mode: {0}".format(
+            "diff vs {0}".format(report.diff_base) if report.scan_mode == "diff" else "full"
+        ),
         f"Status: {status}",
         f"Verdict: {report.verdict}",
         f"Risk: {report.risk_level.title()}",
         f"Score: {report.score}/100",
+        f"New findings: {report.new_findings}",
+        f"Baselined findings: {report.baselined_findings}",
         f"Scanned files: {report.scanned_files}",
         f"Skipped files: {report.skipped_files}",
         "",
@@ -38,22 +43,51 @@ def render_text(report: ScanReport) -> str:
         for finding in report.findings:
             lines.extend(render_text_finding(finding))
 
+    if show_baselined and report.baselined:
+        lines.extend(["", "Baselined findings:"])
+        for finding in report.baselined:
+            lines.extend(render_text_finding(finding, baselined=True))
+
     lines.extend(["", "Recommendation:", f"  {report.recommendation}"])
     return "\n".join(lines)
 
 
-def render_text_finding(finding: Finding) -> List[str]:
+def render_text_finding(finding: Finding, baselined: bool = False) -> List[str]:
     location = finding.path
     if finding.line:
         location = f"{location}:{finding.line}"
     lines = [
-        f"  - {finding.severity.upper()} {finding.rule_id} {location}",
+        "  - {0}{1} {2} {3}".format(
+            "[baselined] " if baselined else "",
+            finding.severity.upper(),
+            finding.rule_id,
+            location,
+        ),
         f"    {finding.title}",
     ]
     if finding.evidence is not None:
         lines.append(f"    Evidence: {finding.evidence}")
     lines.append(f"    Fix: {finding.recommendation}")
     return lines
+
+
+def render_quiet(report: ScanReport) -> str:
+    if report.truncated:
+        return "RepoGuard: INCOMPLETE ({0} limit) — scan truncated, results unreliable.".format(
+            report.truncation_reason
+        )
+    total_findings = report.new_findings + report.baselined_findings
+    return (
+        "RepoGuard: {0} — {1} risk, {2} findings ({3} new, {4} baselined) "
+        "in {5} files. Run without --quiet for details."
+    ).format(
+        report.verdict,
+        report.risk_level,
+        total_findings,
+        report.new_findings,
+        report.baselined_findings,
+        report.scanned_files,
+    )
 
 
 def render_json(report: ScanReport) -> str:
@@ -112,9 +146,13 @@ def render_sarif(report: ScanReport) -> str:
                     "truncated": report.truncated,
                     "truncation_reason": report.truncation_reason,
                     "verdict": report.verdict,
+                    "scan_mode": report.scan_mode,
+                    "diff_base": report.diff_base,
                     "risk_level": report.risk_level,
                     "score": report.score,
                     "recommendation": report.recommendation,
+                    "new_findings": report.new_findings,
+                    "baselined_findings": report.baselined_findings,
                     "scanned_files": report.scanned_files,
                     "skipped_files": report.skipped_files,
                 },
@@ -155,9 +193,16 @@ def sarif_level(severity: str) -> str:
     return "note"
 
 
-def render_report(report: ScanReport, output_format: str) -> str:
+def render_report(
+    report: ScanReport,
+    output_format: str,
+    show_baselined: bool = False,
+    quiet: bool = False,
+) -> str:
     if output_format == "text":
-        return render_text(report)
+        if quiet:
+            return render_quiet(report)
+        return render_text(report, show_baselined=show_baselined)
     if output_format == "json":
         return render_json(report)
     if output_format == "sarif":

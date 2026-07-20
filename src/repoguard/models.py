@@ -1,6 +1,6 @@
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 SEVERITY_POINTS: Dict[str, int] = {
@@ -31,11 +31,22 @@ class Finding:
     evidence: Optional[str]
     description: str
     recommendation: str
+    match_span: Tuple[int, int] = field(default=(0, 0), repr=False, compare=False)
+    fingerprint: str = field(default="", repr=False, compare=False)
 
     def to_dict(self) -> Dict[str, object]:
-        payload = asdict(self)
-        if self.evidence is None:
-            payload.pop("evidence")
+        payload: Dict[str, object] = {
+            "rule_id": self.rule_id,
+            "title": self.title,
+            "severity": self.severity,
+            "category": self.category,
+            "path": self.path,
+            "line": self.line,
+            "description": self.description,
+            "recommendation": self.recommendation,
+        }
+        if self.evidence is not None:
+            payload["evidence"] = self.evidence
         return payload
 
 
@@ -59,6 +70,21 @@ class ScanReport:
     scan_status: str = "complete"
     truncated: bool = False
     truncation_reason: Optional[str] = None
+    baselined: List[Finding] = field(default_factory=list, repr=False)
+    scan_mode: str = "full"
+    diff_base: Optional[str] = None
+
+    @property
+    def new_findings(self) -> int:
+        return len(self.findings)
+
+    @property
+    def baselined_findings(self) -> int:
+        return len(self.baselined)
+
+    @property
+    def all_findings(self) -> List[Finding]:
+        return self.findings + self.baselined
 
     @property
     def score(self) -> int:
@@ -129,9 +155,13 @@ class ScanReport:
             "truncated": self.truncated,
             "truncation_reason": self.truncation_reason,
             "verdict": self.verdict,
+            "scan_mode": self.scan_mode,
+            "diff_base": self.diff_base,
             "risk_level": self.risk_level,
             "score": self.score,
             "recommendation": self.recommendation,
+            "new_findings": self.new_findings,
+            "baselined_findings": self.baselined_findings,
             "scanned_files": self.scanned_files,
             "skipped_files": self.skipped_files,
             "scanned_bytes": self.scanned_bytes,
