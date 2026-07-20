@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -25,16 +26,11 @@ def prepare_target(target: str) -> PreparedTarget:
         return PreparedTarget(original=target, path=local_path.resolve(), source="local")
     if is_git_url(target):
         return clone_target(target)
-    raise FileNotFoundError(f"Target is not a local path or supported Git URL: {target}")
+    raise FileNotFoundError("v0.1.1 supports only public https://github.com/ URLs.")
 
 
 def is_git_url(value: str) -> bool:
-    return (
-        value.startswith("https://github.com/")
-        or value.startswith("http://github.com/")
-        or value.startswith("git@github.com:")
-        or value.endswith(".git")
-    )
+    return re.fullmatch(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?/?", value) is not None
 
 
 def clone_target(url: str) -> PreparedTarget:
@@ -60,6 +56,9 @@ def clone_target(url: str) -> PreparedTarget:
         "1",
         "--no-tags",
         "--quiet",
+        # TODO(v0.x): hardened remote ingestion via --filter=blob:none
+        # --no-checkout plus ls-tree size vetting.
+        "--",
         url,
         str(destination),
     ]
@@ -73,4 +72,3 @@ def clone_target(url: str) -> PreparedTarget:
         detail = exc.stderr.strip() or exc.stdout.strip() or "unknown git error"
         raise RuntimeError(f"Could not clone target repository: {detail}") from exc
     return PreparedTarget(original=url, path=destination, source="git", cleanup_path=temp_root)
-

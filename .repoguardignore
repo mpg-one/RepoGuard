@@ -1,6 +1,3 @@
-# RepoGuard's tests intentionally contain malicious signatures.
-tests/fixtures/suspicious-repo/
-
-# Built-in detection signatures can look suspicious when scanning this scanner.
-src/repoguard/rules.py
-
+# Example explicit ignore file. RepoGuard never loads ignore rules from a
+# scanned repository automatically; pass this file with --ignore-file only
+# after reviewing and trusting its contents.

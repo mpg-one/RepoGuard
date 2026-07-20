@@ -26,7 +26,7 @@ A repository that looks ordinary to a human can contain instructions or automati
 | Capability | Included |
 | --- | --- |
 | Scan local directories | Yes |
-| Scan GitHub and Git repository URLs | Yes |
+| Scan public GitHub repository URLs | Yes |
 | Detect agent-focused prompt injection | Yes |
 | Inspect install scripts and package hooks | Yes |
 | Inspect risky GitHub Actions patterns | Yes |
@@ -70,9 +70,9 @@ PYTHONPATH=src python3 -m repoguard scan ./project
 
 | Risk category | Examples |
 | --- | --- |
-| Agent manipulation | Instructions telling Codex, Claude Code, Cursor, or another agent to ignore rules, reveal prompts, or execute commands |
-| Credential targeting | Requests involving `.env`, SSH keys, API keys, tokens, cloud credentials, or other sensitive local files |
-| Dangerous installation | `curl | bash`, `wget | sh`, remote binary downloads, and package lifecycle hooks |
+| Agent manipulation | Attempts to override trusted guidance or direct an agent toward sensitive operations |
+| Credential targeting | Requests involving environment files, SSH material, API keys, tokens, or cloud credentials |
+| Dangerous installation | Download commands piped directly into shells, remote binaries, and package lifecycle hooks |
 | Data exfiltration | Sensitive-file references combined with network upload behavior |
 | Risky automation | `pull_request_target`, secrets combined with shell execution, and self-hosted GitHub Actions runners |
 | Hidden execution | Python dynamic execution, Node.js child processes, and obfuscated JavaScript |
@@ -83,7 +83,7 @@ Every finding includes:
 
 - severity and rule identifier
 - file path and line number
-- redacted evidence
+- synthetic evidence labels by default (or omitted with `--evidence none`)
 - explanation of the risk
 - recommended next action
 
@@ -92,19 +92,23 @@ Every finding includes:
 ```text
 RepoGuard by MPG ONE LLC
 ========================
-Version: 0.1.0
+Version: 0.1.1
 Target: suspicious-repository
 Source: local
+Status: COMPLETE
+Verdict: DO_NOT_PROCEED
 Risk: Critical
 Score: 100/100
 
 Findings:
   - CRITICAL agent-credential-request README.md:3
     Agent-facing text asks for sensitive credentials or files.
+    Evidence: agent request for sensitive credential material
     Fix: Do not expose this repository to an agent with access to user files or secrets.
 
   - HIGH shell-pipe-to-shell install.sh:2
     Remote script is piped into a shell.
+    Evidence: remote script piped to shell
     Fix: Inspect the downloaded script before execution; agents should not run this automatically.
 
 Recommendation:
@@ -137,6 +141,19 @@ SARIF for security pipelines and code-scanning systems:
 
 ```bash
 repoguard scan . --format sarif --output repoguard.sarif
+```
+
+Evidence is fail-closed by default:
+
+```bash
+# Synthetic labels only; no raw repository excerpts (default)
+repoguard scan . --evidence safe
+
+# Omit evidence entirely; recommended for CI and SARIF uploads
+repoguard scan . --evidence none
+
+# Opt in to hardened, redacted excerpts for trusted local investigation
+repoguard scan . --evidence snippet
 ```
 
 ## Use It Before an AI Agent
@@ -184,6 +201,9 @@ Exit codes:
 | `0` | Scan completed and the configured threshold was not reached |
 | `1` | RepoGuard could not complete the scan |
 | `2` | The configured `--fail-on` threshold was reached |
+| `3` | The scan was incomplete because a resource limit was reached |
+
+Incomplete scans fail closed. They report `Status: INCOMPLETE`, set the machine verdict to `INCOMPLETE`, never display a clean risk level, and return exit code `3` regardless of `--fail-on`.
 
 ## Ignore Policy
 
@@ -199,19 +219,10 @@ RepoGuard does not automatically trust ignore files shipped by the repository be
 
 Available today:
 
-- command-line scanning for local paths and Git URLs
+- command-line scanning for local paths and public GitHub URLs
 - JSON output for scripts and agent tooling
 - SARIF output for security pipelines
 - threshold-based exit codes for automation
-
-Planned integrations:
-
-- MCP server for MCP-compatible clients
-- globally installed Codex and Claude Code skills
-- GitHub Action for repository and pull-request scanning
-- commit-aware trust receipts and changed-file scanning
-
-The CLI is the working product today. Planned integrations will use the same scanner engine and rules.
 
 ## Security Model
 
@@ -222,9 +233,14 @@ RepoGuard is deliberately static and local-first:
 - it does not run setup or package scripts
 - it does not require an LLM or API key
 - it does not upload repository contents for analysis
-- it redacts common credential formats from displayed evidence
+- it emits synthetic evidence labels by default instead of repository excerpts
+- it skips symlinks, special files, and paths resolving outside the scan root
+- it validates file identity before and after opening the descriptor
+- it stops with an explicit `INCOMPLETE` verdict when file-count, byte, or duration limits are reached
 
 Remote scanning requires Git and network access only to download the requested repository.
+
+On platforms that expose `O_NOFOLLOW`, RepoGuard uses it to reject symlinks at open time. Windows does not expose an equivalent through Python's standard library, so RepoGuard combines link classification, containment checks, and pre/post-open descriptor validation. This reduces but cannot fully eliminate a concurrent file-replacement race on Windows.
 
 ## Limitations
 
@@ -242,16 +258,10 @@ cd RepoGuard
 PYTHONPATH=src python3 -m unittest discover -s tests
 ```
 
-Scan the included suspicious fixture:
+Scan RepoGuard without suppressions:
 
 ```bash
-PYTHONPATH=src python3 -m repoguard scan tests/fixtures/suspicious-repo
-```
-
-Scan RepoGuard while excluding its intentionally suspicious test signatures:
-
-```bash
-PYTHONPATH=src python3 -m repoguard scan . --ignore-file .repoguardignore
+PYTHONPATH=src python3 -m repoguard scan . --fail-on high
 ```
 
 Contributions, new detection rules, adversarial fixtures, and false-positive reports are welcome through [GitHub Issues](https://github.com/mpg-one/RepoGuard/issues).
