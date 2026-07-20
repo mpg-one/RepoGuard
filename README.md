@@ -2,11 +2,11 @@
 
 **Scan before you agent.**
 
-RepoGuard is a free-to-use static repository scanner for AI coding agents such as Codex, Claude Code, Cursor, Gemini CLI, and similar tools.
+RepoGuard is an open-source static repository scanner for AI coding agents such as Codex, Claude Code, Cursor, Gemini CLI, and similar tools.
 
 Made by **MPG ONE LLC**.
 
-RepoGuard is free for end users, but it is not an open-source license. You may use it for free, but you may not copy, rename, rebrand, redistribute, sell, or publish modified versions without written permission from MPG ONE LLC.
+RepoGuard is licensed under the Apache License 2.0. You may use, modify, and distribute it under the terms of that license. RepoGuard and MPG ONE branding are covered by the project trademark policy.
 
 ## Why
 
@@ -197,6 +197,6 @@ PYTHONPATH=src python3 -m repoguard scan . --ignore-file .repoguardignore
 
 ## License
 
-Copyright (c) 2026 MPG ONE LLC. All rights reserved.
+Copyright 2026 MPG ONE LLC.
 
-RepoGuard is free to use under the RepoGuard Free Use License. Redistribution, copying, rebranding, white-labeling, selling, publishing modified versions, or representing RepoGuard as your own product is not allowed without written permission from MPG ONE LLC.
+RepoGuard is open-source software licensed under the [Apache License 2.0](LICENSE). See [TRADEMARKS.md](TRADEMARKS.md) for the project branding policy.
