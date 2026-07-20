@@ -1,11 +1,12 @@
 import base64
+import hashlib
 import json
 import math
 import re
 from collections import Counter
 from dataclasses import dataclass
 from fnmatch import fnmatch
-from typing import Callable, Iterable, List, Optional, Pattern
+from typing import Callable, Iterable, List, Optional, Pattern, Tuple
 
 from .models import FileSnapshot, Finding
 
@@ -83,6 +84,12 @@ def line_number(text: str, index: int) -> int:
     return text.count("\n", 0, index) + 1
 
 
+def finding_fingerprint(rule_id: str, relative_path: str, raw_matched_text: str) -> str:
+    match_hash = hashlib.sha256(raw_matched_text.encode("utf-8")).hexdigest()
+    identity = "{0}|{1}|{2}".format(rule_id, relative_path, match_hash)
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+
+
 @dataclass(frozen=True)
 class RegexRule:
     rule_id: str
@@ -106,6 +113,7 @@ class RegexRule:
         findings = []
         for pattern in self.patterns:
             for match in pattern.finditer(snapshot.text):
+                raw_matched_text = match.group(0)
                 findings.append(
                     Finding(
                         rule_id=self.rule_id,
@@ -117,10 +125,14 @@ class RegexRule:
                         evidence=render_evidence(
                             evidence_mode,
                             self.evidence_label,
-                            match.group(0).replace("\n", " "),
+                            raw_matched_text.replace("\n", " "),
                         ),
                         description=self.description,
                         recommendation=self.recommendation,
+                        match_span=match.span(),
+                        fingerprint=finding_fingerprint(
+                            self.rule_id, snapshot.relative_path, raw_matched_text
+                        ),
                     )
                 )
         return findings
@@ -141,7 +153,11 @@ def finding(
     evidence_snippet: str,
     evidence_mode: str = "safe",
     index: int = 0,
+    match_span: Optional[Tuple[int, int]] = None,
+    raw_matched_text: Optional[str] = None,
 ) -> Finding:
+    raw_match = evidence_snippet if raw_matched_text is None else raw_matched_text
+    span = match_span if match_span is not None else (index, index + len(raw_match))
     return Finding(
         rule_id=rule_id,
         title=title,
@@ -152,6 +168,8 @@ def finding(
         evidence=render_evidence(evidence_mode, evidence_label, evidence_snippet.replace("\n", " ")),
         description=description,
         recommendation=recommendation,
+        match_span=span,
+        fingerprint=finding_fingerprint(rule_id, snapshot.relative_path, raw_match),
     )
 
 
@@ -210,6 +228,7 @@ def package_json_lifecycle_rule(snapshot: FileSnapshot, evidence_mode: str = "sa
                 "{0}: {1}".format(name, command),
                 evidence_mode,
                 max(index, 0),
+                raw_matched_text=command,
             )
         )
     return results
@@ -221,6 +240,7 @@ def sensitive_network_combo_rule(snapshot: FileSnapshot, evidence_mode: str = "s
     if not sensitive_match or not network_match:
         return []
     index = min(sensitive_match.start(), network_match.start())
+    end = max(sensitive_match.end(), network_match.end())
     return [
         finding(
             snapshot,
@@ -234,6 +254,8 @@ def sensitive_network_combo_rule(snapshot: FileSnapshot, evidence_mode: str = "s
             "{0} ... {1}".format(sensitive_match.group(0), network_match.group(0)),
             evidence_mode,
             index,
+            match_span=(index, end),
+            raw_matched_text=snapshot.text[index:end],
         )
     ]
 
@@ -246,6 +268,7 @@ def github_actions_secret_remote_rule(snapshot: FileSnapshot, evidence_mode: str
     if not has_secret or not has_remote:
         return []
     index = min(has_secret.start(), has_remote.start())
+    end = max(has_secret.end(), has_remote.end())
     return [
         finding(
             snapshot,
@@ -259,6 +282,8 @@ def github_actions_secret_remote_rule(snapshot: FileSnapshot, evidence_mode: str
             "{0} ... {1}".format(has_secret.group(0), has_remote.group(0)),
             evidence_mode,
             index,
+            match_span=(index, end),
+            raw_matched_text=snapshot.text[index:end],
         )
     ]
 

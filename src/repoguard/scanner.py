@@ -109,7 +109,15 @@ class RepoScanner:
         self._encountered_files = 0
         self._truncation_reason: Optional[str] = None
 
-    def scan(self, root: Path, target: Optional[str] = None, source: Optional[str] = None) -> ScanReport:
+    def scan(
+        self,
+        root: Path,
+        target: Optional[str] = None,
+        source: Optional[str] = None,
+        selected_paths: Optional[Iterable[str]] = None,
+        scan_mode: str = "full",
+        diff_base: Optional[str] = None,
+    ) -> ScanReport:
         root = root.resolve()
         self._deadline = time.monotonic() + self.max_duration_seconds
         self._traversal_skipped = 0
@@ -120,7 +128,7 @@ class RepoScanner:
         skipped_files = 0
         scanned_bytes = 0
 
-        for path in self.iter_files(root):
+        for path in self.iter_files(root, selected_paths):
             if self._limit_reached("max_duration", time.monotonic() >= self._deadline):
                 break
             try:
@@ -160,9 +168,15 @@ class RepoScanner:
             scan_status="incomplete" if truncated else "complete",
             truncated=truncated,
             truncation_reason=self._truncation_reason,
+            scan_mode=scan_mode,
+            diff_base=diff_base,
         )
 
-    def iter_files(self, root: Path) -> Iterator[Path]:
+    def iter_files(self, root: Path, selected_paths: Optional[Iterable[str]] = None) -> Iterator[Path]:
+        if selected_paths is not None:
+            yield from self._iter_selected_files(root, selected_paths)
+            return
+
         root_real = os.path.realpath(str(root))
         directories = [root]
         while directories:
@@ -226,6 +240,39 @@ class RepoScanner:
                 yield path
 
             directories.extend(reversed(child_directories))
+
+    def _iter_selected_files(self, root: Path, selected_paths: Iterable[str]) -> Iterator[Path]:
+        root_real = os.path.realpath(str(root))
+        for relative_path in sorted(set(selected_paths)):
+            if time.monotonic() >= self._deadline:
+                self._mark_truncated("max_duration")
+                return
+            relative = Path(relative_path)
+            if relative.is_absolute() or ".." in relative.parts:
+                self._traversal_skipped += 1
+                continue
+            path = root / relative
+            try:
+                path_stat = os.lstat(str(path))
+            except OSError:
+                self._traversal_skipped += 1
+                continue
+            if stat.S_ISLNK(path_stat.st_mode) or not stat.S_ISREG(path_stat.st_mode):
+                self._traversal_skipped += 1
+                continue
+            if not self._is_contained(root_real, str(path)):
+                self._traversal_skipped += 1
+                continue
+            normalized_path = path.relative_to(root).as_posix()
+            if self.is_ignored(normalized_path):
+                continue
+            if self._encountered_files >= self.max_files:
+                self._mark_truncated("max_files")
+                return
+            self._encountered_files += 1
+            if not self.is_probably_text(path):
+                continue
+            yield path
 
     def read_snapshot(self, root: Path, path: Path) -> Optional[FileSnapshot]:
         fd: Optional[int] = None
@@ -304,7 +351,7 @@ class RepoScanner:
         seen = set()
         unique: List[Finding] = []
         for item in findings:
-            key = (item.rule_id, item.path, item.line, item.evidence)
+            key = (item.rule_id, item.path, item.line, item.match_span)
             if key in seen:
                 continue
             seen.add(key)
