@@ -181,7 +181,7 @@ class BaselineTests(unittest.TestCase):
                 self.assertEqual(update.returncode, 0, update.stderr)
                 baseline_payload = json.loads(baseline_path.read_text(encoding="utf-8"))
                 self.assertEqual(baseline_payload["baseline_version"], 1)
-                self.assertEqual(baseline_payload["tool_version"], "0.2.0")
+                self.assertEqual(baseline_payload["tool_version"], "0.3.0")
                 self.assertTrue(baseline_payload["fingerprints"])
 
                 accepted = run_cli_at(
