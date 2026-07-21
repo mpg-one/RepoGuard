@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repoguard"
-version = "0.3.0"
+version = "0.3.1"
 description = "Static repository risk scanner for AI coding agents."
 readme = "README.md"
 requires-python = ">=3.9"

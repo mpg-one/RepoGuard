@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 — GitHub Marketplace metadata
+
+- Changed the GitHub Marketplace Action name to the unique `RepoGuard AI Agent Security` listing name without changing the RepoGuard product, repository, or `uses: mpg-one/RepoGuard@...` path.
+- Added `shield` and `blue` Marketplace branding and locked the name and branding contract in CI validation.
+
 ## 0.3.0 — Launcher and GitHub Action
 
 - Added `repoguard guard` and `repoguard-exec`, an external trust boundary that scans a local workspace before replacing itself with an agent command on POSIX or running as a parent wrapper on Windows.

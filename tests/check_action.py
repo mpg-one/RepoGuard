@@ -27,6 +27,8 @@ EXPECTED_ACTIONS = {
     "actions/setup-python@v5",
     "github/codeql-action/upload-sarif@v3",
 }
+EXPECTED_NAME = "RepoGuard AI Agent Security"
+EXPECTED_BRANDING = {"icon": "shield", "color": "blue"}
 
 
 def main() -> int:
@@ -34,6 +36,10 @@ def main() -> int:
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise AssertionError("action.yml must contain a mapping")
+    if payload.get("name") != EXPECTED_NAME:
+        raise AssertionError("action.yml Marketplace name changed unexpectedly")
+    if payload.get("branding") != EXPECTED_BRANDING:
+        raise AssertionError("action.yml Marketplace branding changed unexpectedly")
     if payload.get("runs", {}).get("using") != "composite":
         raise AssertionError("action.yml must declare a composite action")
     if set(payload.get("inputs", {})) != EXPECTED_INPUTS:
