@@ -1,5 +1,9 @@
-name: RepoGuard
+name: RepoGuard AI Agent Security
 description: Scan a repository for AI coding-agent risks and optionally upload SARIF.
+
+branding:
+  icon: shield
+  color: blue
 
 inputs:
   path:

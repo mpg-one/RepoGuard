@@ -30,7 +30,7 @@ def write_baseline(path: Path, root: Path) -> None:
     report = RepoScanner().scan(root)
     payload = {
         "baseline_version": 1,
-        "tool_version": "0.3.0",
+        "tool_version": "0.3.1",
         "generated_at": "2026-01-01T00:00:00Z",
         "fingerprints": {
             finding.fingerprint: {
