@@ -26,7 +26,7 @@ def prepare_target(target: str) -> PreparedTarget:
         return PreparedTarget(original=target, path=local_path.resolve(), source="local")
     if is_git_url(target):
         return clone_target(target)
-    raise FileNotFoundError("v0.2.0 supports only public https://github.com/ URLs.")
+    raise FileNotFoundError("v0.3.0 supports only public https://github.com/ URLs.")
 
 
 def is_git_url(value: str) -> bool:

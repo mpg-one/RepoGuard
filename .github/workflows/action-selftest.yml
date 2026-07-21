@@ -1,0 +1,32 @@
+name: Action self-test
+
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run local RepoGuard action
+        id: repoguard
+        uses: ./
+        with:
+          path: .
+          evidence: none
+          fail-on: high
+          upload-sarif: false
+          soft-fail: false
+      - name: Verify action outputs
+        shell: bash
+        env:
+          REPOGUARD_VERDICT: ${{ steps.repoguard.outputs.verdict }}
+          REPOGUARD_SARIF_FILE: ${{ steps.repoguard.outputs.sarif-file }}
+        run: |
+          test -s "$REPOGUARD_SARIF_FILE"
+          test "$REPOGUARD_VERDICT" = "OK"

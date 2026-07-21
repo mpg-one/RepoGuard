@@ -36,6 +36,8 @@ A repository that looks ordinary to a human can contain instructions or automati
 | Explicit baselines for accepted findings | Yes |
 | Changed-file scans for local Git repositories | Yes |
 | One-line daily verdicts | Yes |
+| External agent launcher | Yes |
+| Composite GitHub Action with SARIF upload | Yes |
 | Execute repository code | Never |
 | Upload repository contents for analysis | Never |
 
@@ -100,6 +102,55 @@ git diff -- .repoguard-baseline.json
 **Trust rule:** RepoGuard loads a baseline only when you pass its path with `--baseline`. It never auto-loads `.repoguard-baseline.json` or any other baseline from the repository being scanned. A hostile repository shipping its own baseline has no effect unless you explicitly choose that file.
 
 Baselined findings are excluded from scoring, verdicts, and default output. Use `--show-baselined` to include them in text reports. A baseline update is refused when a scan is incomplete, so a truncated result can never become the accepted baseline.
+
+## Guard Your Agent (Launcher)
+
+Run RepoGuard outside the agent process so the workspace is scanned before the agent reads repository instructions or settings:
+
+```bash
+repoguard guard -- claude
+repoguard guard -- codex
+```
+
+The standalone entry point is equivalent:
+
+```bash
+repoguard-exec -- cursor .
+```
+
+Use `--path` when the guarded workspace is not the current directory:
+
+```bash
+repoguard guard --path ./unknown-project --fail-on high -- claude
+```
+
+The launcher accepts local directories only. It performs a full scan with the existing hardened scanner, then passes the command argv directly to the operating system without `shell=True` or string interpolation. The child inherits the user's current environment unchanged; RepoGuard does not source `.env`, direnv, ignore files, baselines, or policy from the guarded repository. A baseline is used only when its path is explicitly supplied with `--baseline`.
+
+The default policy is fail-closed. High or critical risk blocks execution, and an incomplete scan blocks regardless of the threshold. `--on-block prompt` prompts only on an interactive TTY and defaults to No; non-interactive use denies. `--on-block warn`, `--force`, and `--allow-incomplete` are explicit weaker modes and always emit an audit record to stderr.
+
+| Launcher flag | Purpose |
+| --- | --- |
+| `--path PATH` | Local workspace to scan; defaults to `.` |
+| `--fail-on LEVEL` | Block at `low`, `medium`, `high`, or `critical`; defaults to `high` |
+| `--evidence safe\|none\|snippet` | Evidence mode for `--print-report`; defaults to `safe` |
+| `--baseline PATH` | Explicitly load a reviewed baseline |
+| `--on-block deny\|prompt\|warn` | Select threshold-block behavior; defaults to `deny` |
+| `--allow-incomplete` | Proceed after a truncated scan; use only with deliberate acceptance of incomplete results |
+| `--force` | Override a risk or incomplete block and emit a force audit record |
+| `--print-report` | Print the complete text report to stderr before the decision line |
+| `--max-files`, `--max-total-bytes`, `--max-file-bytes`, `--max-seconds` | Set scanner resource limits |
+| `-- <command> [args...]` | Required separator followed by the exact child argv |
+
+Launcher exit codes:
+
+| Code | Meaning |
+| --- | --- |
+| Child exit code | The scan passed or was explicitly overridden and the command ran |
+| `1` | Invalid arguments, scan error, or command execution error |
+| `20` | Blocked because risk met the configured threshold |
+| `21` | Blocked because the scan was incomplete |
+
+On POSIX, RepoGuard uses process replacement so the child directly receives terminal input and signals. Windows has no equivalent process replacement in the Python standard library, so RepoGuard remains a parent wrapper and returns the child's exit code.
 
 ## What It Detects
 
@@ -194,7 +245,7 @@ repoguard scan . --evidence none
 repoguard scan . --evidence snippet
 ```
 
-### Command Flags
+### Scan Command Flags
 
 | Flag | Purpose |
 | --- | --- |
@@ -267,6 +318,52 @@ Incomplete scans fail closed. They report `Status: INCOMPLETE`, set the machine 
 
 Baselined findings do not contribute to risk thresholds. Operational errors such as malformed baselines, unknown baseline versions, invalid Git refs, or unavailable Git return exit code `1`; RepoGuard never falls back to a full scan when `--diff` fails.
 
+## GitHub Action
+
+The repository includes a composite Action that installs RepoGuard from the checked-out Action path, always creates SARIF before enforcement, and optionally uploads it to GitHub code scanning.
+
+```yaml
+name: RepoGuard
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan repository
+        id: repoguard
+        uses: mpg-one/RepoGuard@v0.3.0
+        with:
+          path: .
+          fail-on: high
+          evidence: none
+          upload-sarif: true
+          soft-fail: false
+```
+
+`security-events: write` is required when `upload-sarif` is enabled. Evidence defaults to `none` deliberately so uploaded SARIF does not contain repository excerpts. `safe` and `snippet` are opt-in; `snippet` is discouraged for reports uploaded to shared CI systems.
+
+| Action input | Default | Purpose |
+| --- | --- | --- |
+| `path` | `.` | Local checkout path to scan |
+| `fail-on` | `high` | Risk threshold that fails the check |
+| `evidence` | `none` | Evidence policy for JSON and SARIF reports |
+| `baseline` | empty | Explicit baseline path; never discovered automatically |
+| `soft-fail` | `false` | Report without failing the job when `true` |
+| `upload-sarif` | `true` | Upload the generated SARIF report |
+| `sarif-file` | `repoguard.sarif` | SARIF output path |
+
+The Action exposes `verdict`, `risk-level`, `exit-code`, and `sarif-file` outputs. It fails closed on scan errors and incomplete scans unless `soft-fail` is explicitly enabled. No `--fail-on` flag is passed during report generation, so SARIF is written before the final policy step.
+
 ## Ignore Policy
 
 Use an explicit ignore file when scanning a trusted project with known test fixtures or generated content:
@@ -282,6 +379,8 @@ RepoGuard does not automatically trust ignore files shipped by the repository be
 Available today:
 
 - command-line scanning for local paths and public GitHub URLs
+- external local-workspace guarding through `repoguard guard` and `repoguard-exec`
+- a composite GitHub Action with SARIF upload and threshold enforcement
 - explicit baseline suppression and changed-file scanning
 - one-line quiet verdicts for frequent local use
 - JSON output for scripts and agent tooling
@@ -302,6 +401,7 @@ RepoGuard is deliberately static and local-first:
 - it validates file identity before and after opening the descriptor
 - it stops with an explicit `INCOMPLETE` verdict when file-count, byte, or duration limits are reached
 - it never auto-loads repository-provided baseline or ignore files
+- its launcher never sources repository environment or policy files and accepts child commands only from argv
 - it applies the complete hardened file pipeline to paths selected by `--diff`
 
 Remote scanning requires Git and network access only to download the requested repository.

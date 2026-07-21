@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 — Launcher and GitHub Action
+
+- Added `repoguard guard` and `repoguard-exec`, an external trust boundary that scans a local workspace before replacing itself with an agent command on POSIX or running as a parent wrapper on Windows.
+- Made launcher decisions fail closed: risk blocks exit `20`, incomplete-scan blocks exit `21`, and scan or execution errors exit `1`. Explicit `warn`, `--force`, and `--allow-incomplete` overrides always emit an audit record.
+- Kept launcher policy outside the scanned tree. Baselines are loaded only through `--baseline`, repository ignore files and environment files are never sourced, and child commands come only from argv after `--`.
+- Added a composite GitHub Action with threshold enforcement, optional soft-fail reporting, and SARIF upload after scanning. SARIF evidence defaults to `none` to avoid repository-text disclosure.
+- Documented the Action's required `security-events: write` permission when SARIF upload is enabled.
+
 ## 0.2.0 — Noise control
 
 - Added explicit baseline files that suppress accepted fingerprints from scoring and default output. Baselines are loaded only with `--baseline`; RepoGuard never trusts or auto-loads a baseline shipped by the scanned repository.

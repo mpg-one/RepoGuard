@@ -6,6 +6,7 @@ from typing import List, Optional
 from . import BRAND, __version__
 from .baseline import Baseline, apply_baseline, load_baseline, write_baseline
 from .gitdiff import diff_paths
+from .launcher import add_guard_arguments, run_guard
 from .reporters import render_report, risk_meets_threshold
 from .scanner import RepoScanner, load_ignore_patterns
 from .target import is_git_url, prepare_target
@@ -116,6 +117,16 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="REF",
         help="Scan changed and untracked files relative to a local Git ref.",
     )
+
+    guard = subparsers.add_parser(
+        "guard",
+        help="Scan a local workspace before running an agent command.",
+        epilog=(
+            "Exit codes: child code on proceed, 1 operational error, "
+            "20 risk block, 21 incomplete-scan block."
+        ),
+    )
+    add_guard_arguments(guard)
     return parser
 
 
@@ -123,19 +134,31 @@ def normalize_argv(argv: Optional[List[str]]) -> List[str]:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
         return ["scan"]
-    if args and args[0] not in {"scan", "--help", "-h", "--version"}:
+    if args and args[0] not in {"scan", "guard", "--help", "-h", "--version"}:
         return ["scan"] + args
     return args
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
-    args = parser.parse_args(normalize_argv(argv))
+    normalized = normalize_argv(argv)
+    try:
+        args = parser.parse_args(normalized)
+    except SystemExit as exc:
+        if normalized and normalized[0] == "guard" and exc.code != 0:
+            print(
+                "RepoGuard-Guard: ERROR error=bad_arguments detail=argument parsing failed",
+                file=sys.stderr,
+            )
+            return 1
+        raise
     if args.command is None:
         parser.print_help()
         return 0
     if args.command == "scan":
         return run_scan(args)
+    if args.command == "guard":
+        return run_guard(args, separator_present="--" in normalized[1:])
     parser.error(f"Unknown command: {args.command}")
     return 1
 
